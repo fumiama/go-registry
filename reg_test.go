@@ -1,6 +1,8 @@
 package registry
 
-import "testing"
+import (
+	"testing"
+)
 
 func TestReg(t *testing.T) {
 	r := NewRegedit("127.0.0.1:8888", "testpwd", "testsps")
@@ -31,6 +33,68 @@ func TestReg(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Log(v)
+	err = r.Close()
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestPush(t *testing.T) {
+	r := NewRegedit("reilia.eastasia.azurecontainer.io:32664", "fumiama", "--")
+	err := r.Connect()
+	if err != nil {
+		t.Fatal(err)
+	}
+	/*
+		m, err := hex.DecodeString("48f7021b54af01360a99e0f0e4937bc2")
+		if err != nil {
+			t.Fatal(err)
+		}
+		err = r.Set("BookReview/bookreview.db", helper.BytesToString(m))
+		if err != nil {
+			t.Fatal(err)
+		}
+		m, err = hex.DecodeString("ae4448ea660c10ffa025bab643566c04")
+		if err != nil {
+			t.Fatal(err)
+		}
+		err = r.Set("Diana/text.pb", helper.BytesToString(m))
+		if err != nil {
+			t.Fatal(err)
+		}
+		m, err = hex.DecodeString("5dde28c2d5c55cc2fd2e9f8276786606")
+		if err != nil {
+			t.Fatal(err)
+		}
+		err = r.Set("Omikuji/kuji.db", helper.BytesToString(m))
+		if err != nil {
+			t.Fatal(err)
+		}
+		m, err = hex.DecodeString("86d9be1db96a74094f9660d47d8d3af7")
+		if err != nil {
+			t.Fatal(err)
+		}
+		err = r.Set("Reborn/rate.json", helper.BytesToString(m))
+		if err != nil {
+			t.Fatal(err)
+		}
+		m, err = hex.DecodeString("9ed2e3922ffe50fda24a566fbd152f7b")
+		if err != nil {
+			t.Fatal(err)
+		}
+		err = r.Set("SetuTime/SetuTime.db", helper.BytesToString(m))
+		if err != nil {
+			t.Fatal(err)
+		}
+		m, err = hex.DecodeString("a02630a6811e93c398a7361e04c1c865")
+		if err != nil {
+			t.Fatal(err)
+		}
+		err = r.Set("VtbQuotation/vtb.db", helper.BytesToString(m))
+		if err != nil {
+			t.Fatal(err)
+		}
+	*/
 	err = r.Close()
 	if err != nil {
 		t.Fatal(err)
