@@ -3,6 +3,7 @@ package registry
 import (
 	"errors"
 	"net"
+	"time"
 
 	tea "github.com/fumiama/gofastTEA"
 	"github.com/wdvxdr1123/ZeroBot/utils/helper"
@@ -42,6 +43,11 @@ func NewRegReader(addr, pwd string) *Regedit {
 
 func (r *Regedit) Connect() (err error) {
 	r.conn, err = net.Dial("tcp", r.addr)
+	return
+}
+
+func (r *Regedit) ConnectIn(wait time.Duration) (err error) {
+	r.conn, err = net.DialTimeout("tcp", r.addr, wait)
 	return
 }
 
