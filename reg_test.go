@@ -50,7 +50,7 @@ func TestPush(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		err = r.Set("BookReview/bookreview.db", helper.BytesToString(m))
+		err = r.Set("data/BookReview/bookreview.db", helper.BytesToString(m))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -58,7 +58,7 @@ func TestPush(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		err = r.Set("Diana/text.pb", helper.BytesToString(m))
+		err = r.Set("data/Diana/text.pb", helper.BytesToString(m))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -66,7 +66,7 @@ func TestPush(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		err = r.Set("Omikuji/kuji.db", helper.BytesToString(m))
+		err = r.Set("data/Omikuji/kuji.db", helper.BytesToString(m))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -74,7 +74,7 @@ func TestPush(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		err = r.Set("Reborn/rate.json", helper.BytesToString(m))
+		err = r.Set("data/Reborn/rate.json", helper.BytesToString(m))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -82,7 +82,7 @@ func TestPush(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		err = r.Set("SetuTime/SetuTime.db", helper.BytesToString(m))
+		err = r.Set("data/SetuTime/SetuTime.db", helper.BytesToString(m))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -90,7 +90,7 @@ func TestPush(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		err = r.Set("VtbQuotation/vtb.db", helper.BytesToString(m))
+		err = r.Set("data/VtbQuotation/vtb.db", helper.BytesToString(m))
 		if err != nil {
 			t.Fatal(err)
 		}
