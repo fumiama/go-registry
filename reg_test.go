@@ -66,6 +66,14 @@ func TestPush(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
+		m, err = hex.DecodeString("f4d6b91f203c89eb42b0a92518a29502")
+		if err != nil {
+			t.Fatal(err)
+		}
+		err = r.Set("data/Diana/text.db", helper.BytesToString(m))
+		if err != nil {
+			t.Fatal(err)
+		}
 		m, err = hex.DecodeString("5dde28c2d5c55cc2fd2e9f8276786606")
 		if err != nil {
 			t.Fatal(err)
