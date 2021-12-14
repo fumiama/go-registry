@@ -46,6 +46,10 @@ func TestPush(t *testing.T) {
 		t.Fatal(err)
 	}
 	/*
+		err = r.Set("ZeroBot-Plugin/kanban", "QQ群:1048452984\n禁止用于商业用途")
+		if err != nil {
+			t.Fatal(err)
+		}
 		m, err := hex.DecodeString("48f7021b54af01360a99e0f0e4937bc2")
 		if err != nil {
 			t.Fatal(err)
