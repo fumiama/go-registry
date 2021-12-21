@@ -46,7 +46,7 @@ func TestPush(t *testing.T) {
 		t.Fatal(err)
 	}
 	/*
-		err = r.Set("ZeroBot-Plugin/kanban", "QQ群:1048452984\n禁止用于商业用途")
+		err = r.Set("ZeroBot-Plugin/kanban", "QQ群:1048452984, 开发群:705749886. 禁止用于商业用途")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -103,6 +103,22 @@ func TestPush(t *testing.T) {
 			t.Fatal(err)
 		}
 		err = r.Set("data/VtbQuotation/vtb.db", helper.BytesToString(m))
+		if err != nil {
+			t.Fatal(err)
+		}
+		m, err = hex.DecodeString("471cebf6b8509abd4c9169e71dff7618")
+		if err != nil {
+			t.Fatal(err)
+		}
+		err = r.Set("data/Chat/kimoi.json", helper.BytesToString(m))
+		if err != nil {
+			t.Fatal(err)
+		}
+		m, err = hex.DecodeString("3db5174e9625ec85ba3a0d48a21eb080")
+		if err != nil {
+			t.Fatal(err)
+		}
+		err = r.Set("data/Funny/jokes.db", helper.BytesToString(m))
 		if err != nil {
 			t.Fatal(err)
 		}
