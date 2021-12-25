@@ -122,8 +122,16 @@ func TestPush(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
+		m, err := hex.DecodeString("ef27cbb457d018423e9b6af5edca7a21")
+		if err != nil {
+			t.Fatal(err)
+		}
+		err = r.Set("data/ChouXiangHua/cxh.db", helper.BytesToString(m))
+		if err != nil {
+			t.Fatal(err)
+		}
+		err = r.Close()
 	*/
-	err = r.Close()
 	if err != nil {
 		t.Fatal(err)
 	}
