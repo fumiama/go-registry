@@ -40,13 +40,13 @@ func TestReg(t *testing.T) {
 }
 
 func TestPush(t *testing.T) {
-	r := NewRegedit("reilia.eastasia.azurecontainer.io:32664", "fumiama", "--")
+	r := NewRegedit("reilia.fumiama.top:32664", "fumiama", "--")
 	err := r.Connect()
 	if err != nil {
 		t.Fatal(err)
 	}
 	/*
-		err = r.Set("ZeroBot-Plugin/kanban", "QQ群:1048452984, 开发群:705749886. 禁止用于商业用途")
+		err = r.Set("ZeroBot-Plugin/kanban", "QQ群:1048452984, 开发群:705749886. 禁止用于商业用途.\nv1.2.2及以下版本公告服将在2月下线.")
 		if err != nil {
 			t.Fatal(err)
 		}

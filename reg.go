@@ -6,7 +6,6 @@ import (
 	"time"
 
 	tea "github.com/fumiama/gofastTEA"
-	"github.com/wdvxdr1123/ZeroBot/utils/helper"
 )
 
 type Regedit struct {
@@ -26,8 +25,8 @@ func NewRegedit(addr, pwd, sps string) *Regedit {
 	if len(sps) > 15 {
 		sps = sps[:15]
 	}
-	copy(tp[:], helper.StringToBytes(pwd))
-	copy(ts[:], helper.StringToBytes(sps))
+	copy(tp[:], StringToBytes(pwd))
+	copy(ts[:], StringToBytes(sps))
 	s := tea.NewTeaCipherLittleEndian(ts[:])
 	return &Regedit{addr: addr, tp: tea.NewTeaCipherLittleEndian(tp[:]), ts: &s}
 }
@@ -37,7 +36,7 @@ func NewRegReader(addr, pwd string) *Regedit {
 	if len(pwd) > 15 {
 		pwd = pwd[:15]
 	}
-	copy(tp[:], helper.StringToBytes(pwd))
+	copy(tp[:], StringToBytes(pwd))
 	return &Regedit{addr: addr, tp: tea.NewTeaCipherLittleEndian(tp[:])}
 }
 
@@ -62,7 +61,7 @@ func (r *Regedit) Get(key string) (string, error) {
 	if len(key) > 127 {
 		return "", errors.New("get key too long")
 	}
-	p := NewCmdPacket(CMDGET, helper.StringToBytes(key), &r.tp)
+	p := NewCmdPacket(CMDGET, StringToBytes(key), &r.tp)
 	r.conn.Write(p.Encrypt(r.seq))
 	r.seq++
 	ack, err := r.ack()
@@ -73,7 +72,7 @@ func (r *Regedit) Get(key string) (string, error) {
 	if ackbytes == nil {
 		return "", errors.New("decrypt ack error")
 	}
-	a := helper.BytesToString(ackbytes)
+	a := BytesToString(ackbytes)
 	r.seq++
 	if a == "erro" {
 		return "", errors.New("server ack error")
@@ -94,7 +93,7 @@ func (r *Regedit) Set(key, value string) error {
 	if len(value) > 127 {
 		return errors.New("set val too long")
 	}
-	p := NewCmdPacket(CMDSET, helper.StringToBytes(key), r.ts)
+	p := NewCmdPacket(CMDSET, StringToBytes(key), r.ts)
 	r.conn.Write(p.Encrypt(r.seq))
 	r.seq++
 	ack, err := r.ack()
@@ -105,7 +104,7 @@ func (r *Regedit) Set(key, value string) error {
 	if ackbytes == nil {
 		return errors.New("decrypt ack error")
 	}
-	a := helper.BytesToString(ackbytes)
+	a := BytesToString(ackbytes)
 	r.seq++
 	if a == "erro" {
 		return errors.New("server ack error")
@@ -113,7 +112,7 @@ func (r *Regedit) Set(key, value string) error {
 	if a != "data" {
 		return errors.New("unknown ack error")
 	}
-	p = NewCmdPacket(CMDDAT, helper.StringToBytes(value), r.ts)
+	p = NewCmdPacket(CMDDAT, StringToBytes(value), r.ts)
 	r.conn.Write(p.Encrypt(r.seq))
 	r.seq++
 	ack, err = r.ack()
@@ -124,7 +123,7 @@ func (r *Regedit) Set(key, value string) error {
 	if ackbytes == nil {
 		return errors.New("decrypt ack error")
 	}
-	a = helper.BytesToString(ackbytes)
+	a = BytesToString(ackbytes)
 	r.seq++
 	if a == "erro" {
 		return errors.New("server ack error")
@@ -142,7 +141,7 @@ func (r *Regedit) Del(key string) error {
 	if len(key) > 127 {
 		return errors.New("get key too long")
 	}
-	p := NewCmdPacket(CMDDEL, helper.StringToBytes(key), r.ts)
+	p := NewCmdPacket(CMDDEL, StringToBytes(key), r.ts)
 	r.conn.Write(p.Encrypt(r.seq))
 	r.seq++
 	ack, err := r.ack()
@@ -153,7 +152,7 @@ func (r *Regedit) Del(key string) error {
 	if ackbytes == nil {
 		return errors.New("decrypt ack error")
 	}
-	a := helper.BytesToString(ackbytes)
+	a := BytesToString(ackbytes)
 	r.seq++
 	if a == "erro" {
 		return errors.New("server ack error")

@@ -2,7 +2,4 @@ module github.com/fumiama/go-registry
 
 go 1.17
 
-require (
-	github.com/fumiama/gofastTEA v0.0.6
-	github.com/wdvxdr1123/ZeroBot v1.4.1
-)
+require github.com/fumiama/gofastTEA v0.0.7
