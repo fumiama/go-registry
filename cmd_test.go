@@ -18,7 +18,12 @@ func TestCmdPacket(t *testing.T) {
 	p := NewCmdPacket(CMDGET, []byte("test"), &tp)
 	conn.Write(p.Encrypt(seq))
 	seq++
-	a := string(ack(t, conn, &tp).Decrypt(seq))
+	ackp := ack(t, conn, &tp)
+	err = ackp.Decrypt(seq)
+	if err != nil {
+		t.Fatal(err)
+	}
+	a := string(ackp.data)
 	t.Log(a)
 	if a != "null" {
 		t.Fail()
@@ -27,7 +32,13 @@ func TestCmdPacket(t *testing.T) {
 	p = NewCmdPacket(CMDSET, []byte("test"), &ts)
 	conn.Write(p.Encrypt(seq))
 	seq++
-	a = string(ack(t, conn, &tp).Decrypt(seq))
+
+	ackp = ack(t, conn, &tp)
+	err = ackp.Decrypt(seq)
+	if err != nil {
+		t.Fatal(err)
+	}
+	a = string(ackp.data)
 	t.Log(a)
 	if a != "data" {
 		t.Fail()
@@ -36,7 +47,13 @@ func TestCmdPacket(t *testing.T) {
 	p = NewCmdPacket(CMDDAT, []byte("测试"), &ts)
 	conn.Write(p.Encrypt(seq))
 	seq++
-	a = string(ack(t, conn, &tp).Decrypt(seq))
+
+	ackp = ack(t, conn, &tp)
+	err = ackp.Decrypt(seq)
+	if err != nil {
+		t.Fatal(err)
+	}
+	a = string(ackp.data)
 	t.Log(a)
 	if a != "succ" {
 		t.Fail()
@@ -45,7 +62,13 @@ func TestCmdPacket(t *testing.T) {
 	p = NewCmdPacket(CMDGET, []byte("test"), &tp)
 	conn.Write(p.Encrypt(seq))
 	seq++
-	a = string(ack(t, conn, &tp).Decrypt(seq))
+
+	ackp = ack(t, conn, &tp)
+	err = ackp.Decrypt(seq)
+	if err != nil {
+		t.Fatal(err)
+	}
+	a = string(ackp.data)
 	t.Log(a)
 	if a != "测试" {
 		t.Fail()
@@ -54,7 +77,13 @@ func TestCmdPacket(t *testing.T) {
 	p = NewCmdPacket(CMDDEL, []byte("test"), &ts)
 	conn.Write(p.Encrypt(seq))
 	seq++
-	a = string(ack(t, conn, &tp).Decrypt(seq))
+
+	ackp = ack(t, conn, &tp)
+	err = ackp.Decrypt(seq)
+	if err != nil {
+		t.Fatal(err)
+	}
+	a = string(ackp.data)
 	t.Log(a)
 	if a != "succ" {
 		t.Fail()
@@ -63,7 +92,13 @@ func TestCmdPacket(t *testing.T) {
 	p = NewCmdPacket(CMDGET, []byte("test"), &tp)
 	conn.Write(p.Encrypt(seq))
 	seq++
-	a = string(ack(t, conn, &tp).Decrypt(seq))
+
+	ackp = ack(t, conn, &tp)
+	err = ackp.Decrypt(seq)
+	if err != nil {
+		t.Fatal(err)
+	}
+	a = string(ackp.data)
 	t.Log(a)
 	if a != "null" {
 		t.Fail()

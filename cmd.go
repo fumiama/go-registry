@@ -2,6 +2,7 @@ package registry
 
 import (
 	"crypto/md5"
+	"errors"
 	"unsafe"
 
 	tea "github.com/fumiama/gofastTEA"
@@ -18,22 +19,36 @@ const (
 	CMDDAT
 )
 
+var (
+	ErrMd5Mismatch = errors.New("cmdpacket.decrypt: md5 mismatch")
+)
+
 type CmdPacket struct {
-	cmd  uint8
-	md5  [16]byte
 	t    tea.TEA
 	data []byte
+	rawCmdPacket
 }
 
+type rawCmdPacket struct {
+	cmd uint8
+	len uint8
+	md5 [16]byte
+	raw [255]byte // raw will expand to len
+}
+
+//go:nosplit
 func NewCmdPacket(cmd uint8, data []byte, t *tea.TEA) *CmdPacket {
 	return &CmdPacket{
-		cmd:  cmd,
-		md5:  md5.Sum(data),
 		t:    *t,
 		data: data,
+		rawCmdPacket: rawCmdPacket{
+			cmd: cmd,
+			md5: md5.Sum(data),
+		},
 	}
 }
 
+//go:nosplit
 func ParseCmdPacket(data []byte, t *tea.TEA) *CmdPacket {
 	if len(data) < 1+1+16 {
 		return nil
@@ -41,34 +56,41 @@ func ParseCmdPacket(data []byte, t *tea.TEA) *CmdPacket {
 	if len(data)-1-1-16 < int(data[1]) {
 		return nil
 	}
-	var md5 [16]byte
-	copy(md5[:], data[2:18])
-	return &CmdPacket{
-		cmd:  data[0],
-		md5:  md5,
-		t:    *t,
-		data: data[18 : data[1]+18],
+	r := (*rawCmdPacket)(*(*unsafe.Pointer)(unsafe.Pointer(&data)))
+	c := &CmdPacket{
+		t: *t,
+		rawCmdPacket: rawCmdPacket{
+			cmd: r.cmd,
+			len: r.len,
+			md5: r.md5,
+		},
 	}
+	copy(c.raw[:], data[1+1+16:])
+	return c
 }
 
+//go:nosplit
 func (c *CmdPacket) Encrypt(seq uint8) (raw []byte) {
 	setseq(&c.t, seq)
-	d := c.t.EncryptLittleEndian(c.data, sumtable)
-	raw = append(raw, c.cmd, uint8(len(d)))
-	raw = append(raw, c.md5[:]...)
-	raw = append(raw, d...)
+	c.len = uint8(c.t.EncryptLittleEndianTo(c.data, sumtable, c.raw[:]))
+	(*slice)(unsafe.Pointer(&raw)).Data = unsafe.Pointer(&c.rawCmdPacket)
+	(*slice)(unsafe.Pointer(&raw)).Len = 1 + 1 + 16 + int(c.len)
+	(*slice)(unsafe.Pointer(&raw)).Cap = 1 + 1 + 16 + 255
 	return
 }
 
-func (c *CmdPacket) Decrypt(seq uint8) []byte {
+//go:nosplit
+func (c *CmdPacket) Decrypt(seq uint8) error {
 	setseq(&c.t, seq)
-	d := c.t.DecryptLittleEndian(c.data, sumtable)
+	d := c.t.DecryptLittleEndian(c.raw[:c.len], sumtable)
 	if d != nil && c.md5 == md5.Sum(d) {
-		return d
+		c.data = d
+		return nil
 	}
-	return nil
+	return ErrMd5Mismatch
 }
 
+//go:nosplit
 func setseq(t *tea.TEA, seq uint8) {
 	*(*uint8)(unsafe.Pointer(uintptr(unsafe.Pointer(t)) + uintptr(15))) = seq
 }

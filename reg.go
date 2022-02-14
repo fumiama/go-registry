@@ -68,11 +68,11 @@ func (r *Regedit) Get(key string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	ackbytes := ack.Decrypt(r.seq)
-	if ackbytes == nil {
+	err = ack.Decrypt(r.seq)
+	if err != nil {
 		return "", errors.New("decrypt ack error")
 	}
-	a := BytesToString(ackbytes)
+	a := BytesToString(ack.data)
 	r.seq++
 	if a == "erro" {
 		return "", errors.New("server ack error")
@@ -100,11 +100,11 @@ func (r *Regedit) Set(key, value string) error {
 	if err != nil {
 		return err
 	}
-	ackbytes := ack.Decrypt(r.seq)
-	if ackbytes == nil {
+	err = ack.Decrypt(r.seq)
+	if err != nil {
 		return errors.New("decrypt ack error")
 	}
-	a := BytesToString(ackbytes)
+	a := BytesToString(ack.data)
 	r.seq++
 	if a == "erro" {
 		return errors.New("server ack error")
@@ -119,11 +119,11 @@ func (r *Regedit) Set(key, value string) error {
 	if err != nil {
 		return err
 	}
-	ackbytes = ack.Decrypt(r.seq)
-	if ackbytes == nil {
+	err = ack.Decrypt(r.seq)
+	if err != nil {
 		return errors.New("decrypt ack error")
 	}
-	a = BytesToString(ackbytes)
+	a = BytesToString(ack.data)
 	r.seq++
 	if a == "erro" {
 		return errors.New("server ack error")
@@ -148,11 +148,11 @@ func (r *Regedit) Del(key string) error {
 	if err != nil {
 		return err
 	}
-	ackbytes := ack.Decrypt(r.seq)
-	if ackbytes == nil {
+	err = ack.Decrypt(r.seq)
+	if err != nil {
 		return errors.New("decrypt ack error")
 	}
-	a := BytesToString(ackbytes)
+	a := BytesToString(ack.data)
 	r.seq++
 	if a == "erro" {
 		return errors.New("server ack error")
