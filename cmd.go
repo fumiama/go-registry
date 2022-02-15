@@ -3,6 +3,7 @@ package registry
 import (
 	"crypto/md5"
 	"errors"
+	"io"
 	"unsafe"
 
 	tea "github.com/fumiama/gofastTEA"
@@ -24,7 +25,8 @@ var (
 )
 
 type CmdPacket struct {
-	t    tea.TEA
+	io.ReaderFrom
+	t    *tea.TEA
 	data []byte
 	rawCmdPacket
 }
@@ -37,19 +39,17 @@ type rawCmdPacket struct {
 }
 
 //go:nosplit
-func NewCmdPacket(cmd uint8, data []byte, t *tea.TEA) *CmdPacket {
-	return &CmdPacket{
-		t:    *t,
-		data: data,
-		rawCmdPacket: rawCmdPacket{
-			cmd: cmd,
-			md5: md5.Sum(data),
-		},
-	}
+func NewCmdPacket(cmd uint8, data []byte, t *tea.TEA) (c *CmdPacket) {
+	c = pool.Get().(*CmdPacket)
+	c.t = t
+	c.data = data
+	c.cmd = cmd
+	c.md5 = md5.Sum(data)
+	return
 }
 
 //go:nosplit
-func ParseCmdPacket(data []byte, t *tea.TEA) *CmdPacket {
+func ParseCmdPacket(data []byte, t *tea.TEA) (c *CmdPacket) {
 	if len(data) < 1+1+16 {
 		return nil
 	}
@@ -57,21 +57,81 @@ func ParseCmdPacket(data []byte, t *tea.TEA) *CmdPacket {
 		return nil
 	}
 	r := (*rawCmdPacket)(*(*unsafe.Pointer)(unsafe.Pointer(&data)))
-	c := &CmdPacket{
-		t: *t,
-		rawCmdPacket: rawCmdPacket{
-			cmd: r.cmd,
-			len: r.len,
-			md5: r.md5,
-		},
-	}
+	c = pool.Get().(*CmdPacket)
+	c.t = t
+	c.cmd = r.cmd
+	c.len = r.len
+	c.md5 = r.md5
 	copy(c.raw[:], data[1+1+16:])
 	return c
 }
 
 //go:nosplit
+func ReadCmdPacket(f io.Reader, t *tea.TEA) (c *CmdPacket, err error) {
+	c = pool.Get().(*CmdPacket)
+	buf := (*[1 + 1 + 16 + 255]byte)(unsafe.Pointer(&c.rawCmdPacket))
+	_, err = io.ReadFull(f, buf[:1+1+16])
+	if err != nil {
+		c.Put()
+		return nil, err
+	}
+	_, err = io.ReadFull(f, c.raw[:c.len])
+	if err != nil {
+		c.Put()
+		return nil, err
+	}
+	return
+}
+
+//go:nosplit
+func (c *CmdPacket) Refresh(cmd uint8, data []byte, t *tea.TEA) {
+	c.t = t
+	c.data = data
+	c.cmd = cmd
+	c.md5 = md5.Sum(data)
+}
+
+//go:nosplit
+func (c *CmdPacket) ClearData() {
+	c.data = nil
+}
+
+//go:nosplit
+func (c *CmdPacket) ReadFrom(f io.Reader) (n int64, err error) {
+	buf := (*[1 + 1 + 16 + 255]byte)(unsafe.Pointer(&c.rawCmdPacket))
+	cnt, err := io.ReadFull(f, buf[:1+1+16])
+	if err != nil {
+		return int64(cnt), err
+	}
+	cnt, err = io.ReadFull(f, c.raw[:c.len])
+	if err != nil {
+		return int64(cnt), err
+	}
+	return
+}
+
+// Write should not be used due to the full-copy of buf
+func (c *CmdPacket) Write(buf []byte) (n int, err error) {
+	oldlen := len(c.data)
+	c.data = append(c.data, buf...)
+	if len(c.data) < 1+1+16 {
+		return len(buf), nil
+	}
+	if len(c.data) < 1+1+16+int(c.len) {
+		return len(buf), nil
+	}
+	r := (*rawCmdPacket)(*(*unsafe.Pointer)(unsafe.Pointer(&c.data)))
+	c.cmd = r.cmd
+	c.len = r.len
+	c.md5 = r.md5
+	copy(c.raw[:], r.raw[:c.len])
+	c.data = nil
+	return 1 + 1 + 16 + int(c.len) - oldlen, nil
+}
+
+//go:nosplit
 func (c *CmdPacket) Encrypt(seq uint8) (raw []byte) {
-	setseq(&c.t, seq)
+	setseq(c.t, seq)
 	c.len = uint8(c.t.EncryptLittleEndianTo(c.data, sumtable, c.raw[:]))
 	(*slice)(unsafe.Pointer(&raw)).Data = unsafe.Pointer(&c.rawCmdPacket)
 	(*slice)(unsafe.Pointer(&raw)).Len = 1 + 1 + 16 + int(c.len)
@@ -81,13 +141,19 @@ func (c *CmdPacket) Encrypt(seq uint8) (raw []byte) {
 
 //go:nosplit
 func (c *CmdPacket) Decrypt(seq uint8) error {
-	setseq(&c.t, seq)
+	setseq(c.t, seq)
 	d := c.t.DecryptLittleEndian(c.raw[:c.len], sumtable)
 	if d != nil && c.md5 == md5.Sum(d) {
 		c.data = d
 		return nil
 	}
 	return ErrMd5Mismatch
+}
+
+//go:nosplit
+func (c *CmdPacket) Put() {
+	c.data = nil
+	pool.Put(c)
 }
 
 //go:nosplit
