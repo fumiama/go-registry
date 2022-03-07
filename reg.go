@@ -85,7 +85,7 @@ func (r *Regedit) Get(key string) (string, error) {
 	if err != nil {
 		return "", ErrDecAck
 	}
-	a := BytesToString(p.data)
+	a := string(p.data)
 	r.seq++
 	if a == "erro" {
 		return "", ErrInternalServer
