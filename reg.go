@@ -23,12 +23,11 @@ var (
 
 type Regedit struct {
 	sync.Mutex
-	conn   net.Conn
-	addr   string
-	tp     tea.TEA
-	ts     *tea.TEA
-	seq    byte
-	isopen bool
+	conn net.Conn
+	addr string
+	tp   tea.TEA
+	ts   *tea.TEA
+	seq  byte
 }
 
 func NewRegedit(addr, pwd, sps string) *Regedit {
@@ -55,38 +54,31 @@ func NewRegReader(addr, pwd string) *Regedit {
 }
 
 func (r *Regedit) Connect() (err error) {
-	if !r.isopen {
-		r.Lock()
+	r.Lock()
+	if r.conn == nil {
 		r.conn, err = net.Dial("tcp", r.addr)
-		if err == nil {
-			r.isopen = true
-		}
-		r.Unlock()
 	}
+	r.Unlock()
 	return
 }
 
 func (r *Regedit) ConnectIn(wait time.Duration) (err error) {
-	if !r.isopen {
-		r.Lock()
+	r.Lock()
+	if r.conn == nil {
 		r.conn, err = net.DialTimeout("tcp", r.addr, wait)
-		if err == nil {
-			r.isopen = true
-		}
-		r.Unlock()
 	}
+	r.Unlock()
 	return
 }
 
 func (r *Regedit) Close() (err error) {
 	r.Lock()
 	defer r.Unlock()
-	if r.isopen {
+	if r.conn != nil {
 		p := NewCmdPacket(CMDEND, []byte("fill"), &r.tp)
 		r.conn.Write(p.Encrypt(r.seq))
 		p.Put()
 		r.seq = 0
-		r.isopen = false
 		err = r.conn.Close()
 		r.conn = nil
 		return
