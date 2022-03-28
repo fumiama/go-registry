@@ -55,22 +55,26 @@ func NewRegReader(addr, pwd string) *Regedit {
 }
 
 func (r *Regedit) Connect() (err error) {
-	r.Lock()
-	r.conn, err = net.Dial("tcp", r.addr)
-	if err != nil {
-		r.isopen = true
+	if !r.isopen {
+		r.Lock()
+		r.conn, err = net.Dial("tcp", r.addr)
+		if err == nil {
+			r.isopen = true
+		}
+		r.Unlock()
 	}
-	r.Unlock()
 	return
 }
 
 func (r *Regedit) ConnectIn(wait time.Duration) (err error) {
-	r.Lock()
-	r.conn, err = net.DialTimeout("tcp", r.addr, wait)
-	if err != nil {
-		r.isopen = true
+	if !r.isopen {
+		r.Lock()
+		r.conn, err = net.DialTimeout("tcp", r.addr, wait)
+		if err == nil {
+			r.isopen = true
+		}
+		r.Unlock()
 	}
-	r.Unlock()
 	return
 }
 
@@ -83,7 +87,9 @@ func (r *Regedit) Close() (err error) {
 		p.Put()
 		r.seq = 0
 		r.isopen = false
-		return r.conn.Close()
+		err = r.conn.Close()
+		r.conn = nil
+		return
 	}
 	return
 }
