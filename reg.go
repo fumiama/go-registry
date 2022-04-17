@@ -107,10 +107,10 @@ func (r *Regedit) Get(key string) (string, error) {
 		return "", ErrDecAck
 	}
 	a := string(p.data)
-	if a == "erro" {
+	if a == "erro" && p.cmd == ACKERRO {
 		return "", ErrInternalServer
 	}
-	if a == "null" {
+	if a == "null" && p.cmd == ACKNULL {
 		return "", ErrNoSuchKey
 	}
 	return a, nil
@@ -145,10 +145,10 @@ func (r *Regedit) Set(key, value string) error {
 		return ErrDecAck
 	}
 	a := BytesToString(ack.data)
-	if a == "erro" {
+	if a == "erro" || ack.cmd == ACKERRO {
 		return ErrInternalServer
 	}
-	if a != "data" {
+	if a != "data" && ack.cmd != ACKDATA {
 		return ErrUnknownAck
 	}
 	p.Refresh(CMDDAT, StringToBytes(value), r.ts)
@@ -167,10 +167,10 @@ func (r *Regedit) Set(key, value string) error {
 		return ErrDecAck
 	}
 	a = BytesToString(ack.data)
-	if a == "erro" {
+	if a == "erro" || ack.cmd == ACKERRO {
 		return ErrInternalServer
 	}
-	if a != "succ" {
+	if a != "succ" && ack.cmd != ACKSUCC {
 		return ErrUnknownAck
 	}
 	return nil
@@ -202,20 +202,20 @@ func (r *Regedit) Del(key string) error {
 		return ErrDecAck
 	}
 	a := BytesToString(ack.data)
-	if a == "erro" {
+	if a == "erro" || ack.cmd == ACKERRO {
 		return ErrInternalServer
 	}
-	if a == "null" {
+	if a == "null" || ack.cmd == ACKNULL {
 		return ErrNoSuchKey
 	}
-	if a != "succ" {
+	if a != "succ" && ack.cmd != ACKSUCC {
 		return ErrUnknownAck
 	}
 	return nil
 }
 
 func (r *Regedit) ack(c *CmdPacket) error {
-	// c.ClearData()
+	c.cmd = 0
 	_, err := io.Copy(c, r.conn)
 	return err
 }

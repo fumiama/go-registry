@@ -20,6 +20,15 @@ const (
 	CMDDAT
 )
 
+const (
+	ACKNONE uint8 = iota<<4 + 3
+	ACKSUCC
+	ACKDATA
+	ACKNULL
+	ACKNEQU
+	ACKERRO
+)
+
 var (
 	ErrMd5Mismatch = errors.New("cmdpacket.decrypt: md5 mismatch")
 )
@@ -92,12 +101,11 @@ func (c *CmdPacket) Refresh(cmd uint8, data []byte, t *tea.TEA) {
 }
 
 //go:nosplit
-func (c *CmdPacket) ClearData() {
-	c.data = nil
-}
-
-//go:nosplit
 func (c *CmdPacket) ReadFrom(f io.Reader) (n int64, err error) {
+	if c.cmd > 0 {
+		err = io.EOF
+		return
+	}
 	buf := (*[1 + 1 + 16 + 255]byte)(unsafe.Pointer(&c.rawCmdPacket))
 	cnt, err := io.ReadFull(f, buf[:1+1+16])
 	if err != nil {
@@ -152,13 +160,14 @@ func (c *CmdPacket) Decrypt(seq uint8) error {
 
 //go:nosplit
 func (c *CmdPacket) Put() {
+	c.cmd = 0
 	c.data = nil
 	pool.Put(c)
 }
 
 //go:nosplit
 func setseq(t *tea.TEA, seq uint8) {
-	*(*uint8)(unsafe.Pointer(uintptr(unsafe.Pointer(t)) + uintptr(15))) = seq
+	*(*uint8)(unsafe.Add(unsafe.Pointer(t), 15)) = seq
 }
 
 // TEA encoding sumtable

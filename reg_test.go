@@ -11,7 +11,7 @@ func TestReg(t *testing.T) {
 		t.Fatal(err)
 	}
 	v, err := r.Get("test")
-	if err != nil {
+	if err != nil && err != ErrNoSuchKey {
 		t.Fatal(err)
 	}
 	t.Log(v)
@@ -29,10 +29,10 @@ func TestReg(t *testing.T) {
 		t.Fatal(err)
 	}
 	v, err = r.Get("test")
-	if err != nil {
+	t.Log(v)
+	if err != ErrNoSuchKey {
 		t.Fatal(err)
 	}
-	t.Log(v)
 	err = r.Close()
 	if err != nil {
 		t.Fatal(err)
