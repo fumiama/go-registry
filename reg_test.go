@@ -45,7 +45,7 @@ func TestPush(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = r.Set("ZeroBot-Plugin/kanban", "QQ群:1048452984, 开发群:705749886. 禁止用于商业用途.\nv1.2.2及以下版本公告服已下线.")
+	err = r.Set("ZeroBot-Plugin/kanban", "由于tx更改登录鉴权, 近期gocqzbp闪退增多,\n请及时处理以免对md5服务器产生过量请求, 导致IP被封.")
 	if err != nil {
 		t.Fatal(err)
 	}

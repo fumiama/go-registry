@@ -129,18 +129,17 @@ func (r *Regedit) Set(key, value string) error {
 	p := NewCmdPacket(CMDSET, StringToBytes(key), r.ts)
 	defer p.Put()
 	r.Lock()
+	defer r.Unlock()
 	r.conn.Write(p.Encrypt(r.seq))
 	r.seq++
 	ack := NewCmdPacket(CMDACK, nil, &r.tp)
 	defer ack.Put()
 	err := r.ack(ack)
 	if err != nil {
-		r.Unlock()
 		return err
 	}
 	err = ack.Decrypt(r.seq)
 	r.seq++
-	r.Unlock()
 	if err != nil {
 		return ErrDecAck
 	}
@@ -152,17 +151,14 @@ func (r *Regedit) Set(key, value string) error {
 		return ErrUnknownAck
 	}
 	p.Refresh(CMDDAT, StringToBytes(value), r.ts)
-	r.Lock()
 	r.conn.Write(p.Encrypt(r.seq))
 	r.seq++
 	err = r.ack(ack)
 	if err != nil {
-		r.Unlock()
 		return err
 	}
 	err = ack.Decrypt(r.seq)
 	r.seq++
-	r.Unlock()
 	if err != nil {
 		return ErrDecAck
 	}
