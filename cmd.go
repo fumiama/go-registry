@@ -36,7 +36,7 @@ var (
 type CmdPacket struct {
 	io.ReaderFrom
 	t    *tea.TEA
-	data []byte
+	Data []byte
 	rawCmdPacket
 }
 
@@ -51,7 +51,7 @@ type rawCmdPacket struct {
 func NewCmdPacket(cmd uint8, data []byte, t *tea.TEA) (c *CmdPacket) {
 	c = pool.Get().(*CmdPacket)
 	c.t = t
-	c.data = data
+	c.Data = data
 	c.cmd = cmd
 	c.md5 = md5.Sum(data)
 	return
@@ -95,7 +95,7 @@ func ReadCmdPacket(f io.Reader, t *tea.TEA) (c *CmdPacket, err error) {
 //go:nosplit
 func (c *CmdPacket) Refresh(cmd uint8, data []byte, t *tea.TEA) {
 	c.t = t
-	c.data = data
+	c.Data = data
 	c.cmd = cmd
 	c.md5 = md5.Sum(data)
 }
@@ -120,27 +120,27 @@ func (c *CmdPacket) ReadFrom(f io.Reader) (n int64, err error) {
 
 // Write should not be used due to the full-copy of buf
 func (c *CmdPacket) Write(buf []byte) (n int, err error) {
-	oldlen := len(c.data)
-	c.data = append(c.data, buf...)
-	if len(c.data) < 1+1+16 {
+	oldlen := len(c.Data)
+	c.Data = append(c.Data, buf...)
+	if len(c.Data) < 1+1+16 {
 		return len(buf), nil
 	}
-	if len(c.data) < 1+1+16+int(c.len) {
+	if len(c.Data) < 1+1+16+int(c.len) {
 		return len(buf), nil
 	}
-	r := (*rawCmdPacket)(*(*unsafe.Pointer)(unsafe.Pointer(&c.data)))
+	r := (*rawCmdPacket)(*(*unsafe.Pointer)(unsafe.Pointer(&c.Data)))
 	c.cmd = r.cmd
 	c.len = r.len
 	c.md5 = r.md5
 	copy(c.raw[:], r.raw[:c.len])
-	c.data = nil
+	c.Data = nil
 	return 1 + 1 + 16 + int(c.len) - oldlen, nil
 }
 
 //go:nosplit
 func (c *CmdPacket) Encrypt(seq uint8) (raw []byte) {
 	setseq(c.t, seq)
-	c.len = uint8(c.t.EncryptLittleEndianTo(c.data, sumtable, c.raw[:]))
+	c.len = uint8(c.t.EncryptLittleEndianTo(c.Data, sumtable, c.raw[:]))
 	(*slice)(unsafe.Pointer(&raw)).Data = unsafe.Pointer(&c.rawCmdPacket)
 	(*slice)(unsafe.Pointer(&raw)).Len = 1 + 1 + 16 + int(c.len)
 	(*slice)(unsafe.Pointer(&raw)).Cap = 1 + 1 + 16 + 255
@@ -152,7 +152,7 @@ func (c *CmdPacket) Decrypt(seq uint8) error {
 	setseq(c.t, seq)
 	d := c.t.DecryptLittleEndian(c.raw[:c.len], sumtable)
 	if d != nil && c.md5 == md5.Sum(d) {
-		c.data = d
+		c.Data = d
 		return nil
 	}
 	return ErrMd5Mismatch
@@ -161,7 +161,7 @@ func (c *CmdPacket) Decrypt(seq uint8) error {
 //go:nosplit
 func (c *CmdPacket) Put() {
 	c.cmd = 0
-	c.data = nil
+	c.Data = nil
 	pool.Put(c)
 }
 

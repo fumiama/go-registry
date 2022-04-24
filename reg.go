@@ -106,7 +106,7 @@ func (r *Regedit) Get(key string) (string, error) {
 	if err != nil {
 		return "", ErrDecAck
 	}
-	a := string(p.data)
+	a := string(p.Data)
 	if a == "erro" && p.cmd == ACKERRO {
 		return "", ErrInternalServer
 	}
@@ -143,7 +143,7 @@ func (r *Regedit) Set(key, value string) error {
 	if err != nil {
 		return ErrDecAck
 	}
-	a := BytesToString(ack.data)
+	a := BytesToString(ack.Data)
 	if a == "erro" || ack.cmd == ACKERRO {
 		return ErrInternalServer
 	}
@@ -162,7 +162,7 @@ func (r *Regedit) Set(key, value string) error {
 	if err != nil {
 		return ErrDecAck
 	}
-	a = BytesToString(ack.data)
+	a = BytesToString(ack.Data)
 	if a == "erro" || ack.cmd == ACKERRO {
 		return ErrInternalServer
 	}
@@ -197,7 +197,7 @@ func (r *Regedit) Del(key string) error {
 	if err != nil {
 		return ErrDecAck
 	}
-	a := BytesToString(ack.data)
+	a := BytesToString(ack.Data)
 	if a == "erro" || ack.cmd == ACKERRO {
 		return ErrInternalServer
 	}
