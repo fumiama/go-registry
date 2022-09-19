@@ -45,7 +45,7 @@ func TestPush(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = r.Set("ZeroBot-Plugin/kanban", "QQ群:1048452984; 开发群: 752669987;\n进阶开发群:705749886. 禁止用于商业用途.")
+	err = r.Set("ZeroBot-Plugin/kanban", "QQ群:1048452984, 开发群:752669987,\n进阶开发群:705749886. 禁止用于商业用途.")
 	if err != nil {
 		t.Fatal(err)
 	}
