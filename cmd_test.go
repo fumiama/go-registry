@@ -6,7 +6,7 @@ import (
 )
 
 func TestRegedit(t *testing.T) {
-	reg := NewRegedit("127.0.0.1:8888", "testpwd", "testsps")
+	reg := NewRegedit("127.0.0.1:8888", "testpwd", "testsps", 127, 127)
 	err := reg.Connect()
 	if err != nil {
 		t.Fatal(err)

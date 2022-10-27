@@ -1,12 +1,16 @@
 package registry
 
 import (
+	"bytes"
+	"crypto/md5"
 	"errors"
 	"io"
 	"net"
+	"strconv"
 	"sync"
 	"time"
 
+	spb "github.com/fumiama/go-simple-protobuf"
 	tea "github.com/fumiama/gofastTEA"
 )
 
@@ -19,18 +23,21 @@ var (
 	ErrSetValTooLong    = errors.New("set val too long")
 	ErrUnknownAck       = errors.New("unknown ack error")
 	ErrNoSuchKey        = errors.New("no such key")
+	ErrRawDataTooLong   = errors.New("raw data too long")
+	ErrMd5NotEqual      = errors.New("md5 not equal")
 )
 
 type Regedit struct {
 	sync.Mutex
-	conn net.Conn
-	addr string
-	tp   tea.TEA
-	ts   *tea.TEA
-	seq  byte
+	conn       net.Conn
+	addr       string
+	tp         tea.TEA
+	ts         *tea.TEA
+	dksz, ddsz int
+	seq        byte
 }
 
-func NewRegedit(addr, pwd, sps string) *Regedit {
+func NewRegedit(addr, pwd, sps string, dksz, ddsz int) *Regedit {
 	var tp, ts [16]byte
 	if len(pwd) > 15 {
 		pwd = pwd[:15]
@@ -41,16 +48,16 @@ func NewRegedit(addr, pwd, sps string) *Regedit {
 	copy(tp[:], StringToBytes(pwd))
 	copy(ts[:], StringToBytes(sps))
 	s := tea.NewTeaCipherLittleEndian(ts[:])
-	return &Regedit{addr: addr, tp: tea.NewTeaCipherLittleEndian(tp[:]), ts: &s}
+	return &Regedit{addr: addr, tp: tea.NewTeaCipherLittleEndian(tp[:]), ts: &s, dksz: dksz, ddsz: ddsz}
 }
 
-func NewRegReader(addr, pwd string) *Regedit {
+func NewRegReader(addr, pwd string, dksz, ddsz int) *Regedit {
 	var tp [16]byte
 	if len(pwd) > 15 {
 		pwd = pwd[:15]
 	}
 	copy(tp[:], StringToBytes(pwd))
-	return &Regedit{addr: addr, tp: tea.NewTeaCipherLittleEndian(tp[:])}
+	return &Regedit{addr: addr, tp: tea.NewTeaCipherLittleEndian(tp[:]), dksz: dksz, ddsz: ddsz}
 }
 
 func (r *Regedit) Connect() (err error) {
@@ -114,6 +121,89 @@ func (r *Regedit) Get(key string) (string, error) {
 		return "", ErrNoSuchKey
 	}
 	return a, nil
+}
+
+func (r *Regedit) Cat() (*Storage, error) {
+	p := NewCmdPacket(CMDCAT, []byte("fill"), &r.tp)
+	defer p.Put()
+	r.Lock()
+	r.conn.Write(p.Encrypt(r.seq))
+	r.seq++
+	seq := r.seq
+	r.seq++
+	r.Unlock()
+	var buf [64]byte
+	i := 0
+	for {
+		_, err := r.conn.Read(buf[i : i+1])
+		if err != nil {
+			return nil, err
+		}
+		if buf[i] == '$' {
+			break
+		}
+		i++
+		if i >= 64 {
+			return nil, ErrRawDataTooLong
+		}
+	}
+	n, err := strconv.ParseUint(BytesToString(buf[:i]), 10, 64)
+	if err != nil {
+		return nil, err
+	}
+	data := make([]byte, n)
+	_, err = r.conn.Read(data)
+	if err != nil {
+		return nil, err
+	}
+	setseq(&r.tp, seq)
+	data = r.tp.DecryptLittleEndian(data, sumtable)
+	s := new(Storage)
+	s.m = make(map[string]string, 256)
+	s.Md5 = md5.Sum(data)
+	rd := bytes.NewReader(data)
+	for i = 0; i < len(data); {
+		sp, err := spb.NewSimplePB(rd)
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return nil, err
+		}
+		s.m[BytesToString(sp.Target[0])] = BytesToString(sp.Target[1])
+		i += int(sp.RealLen)
+	}
+	return s, nil
+}
+
+func (r *Regedit) IsMd5Equal(m [md5.Size]byte) (bool, error) {
+	p := NewCmdPacket(CMDMD5, m[:], &r.tp)
+	defer p.Put()
+	r.Lock()
+	r.conn.Write(p.Encrypt(r.seq))
+	r.seq++
+	err := r.ack(p)
+	if err != nil {
+		r.Unlock()
+		return false, err
+	}
+	err = p.Decrypt(r.seq)
+	r.seq++
+	r.Unlock()
+	if err != nil {
+		return false, ErrDecAck
+	}
+	a := string(p.Data)
+	if a == "erro" && p.cmd == ACKERRO {
+		return false, ErrInternalServer
+	}
+	if a == "nequ" && p.cmd == ACKNEQU {
+		return false, ErrNoSuchKey
+	}
+	if a == "null" && p.cmd == ACKNULL {
+		return true, nil
+	}
+	return false, ErrUnknownAck
 }
 
 func (r *Regedit) Set(key, value string) error {

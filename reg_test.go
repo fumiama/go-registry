@@ -5,7 +5,7 @@ import (
 )
 
 func TestReg(t *testing.T) {
-	r := NewRegedit("127.0.0.1:8888", "testpwd", "testsps")
+	r := NewRegedit("127.0.0.1:8888", "testpwd", "testsps", 127, 127)
 	err := r.Connect()
 	if err != nil {
 		t.Fatal(err)
@@ -33,6 +33,33 @@ func TestReg(t *testing.T) {
 	if err != ErrNoSuchKey {
 		t.Fatal(err)
 	}
+	err = r.Set("test", "测试")
+	if err != nil {
+		t.Fatal(err)
+	}
+	s, err := r.Cat()
+	if err != nil {
+		t.Fatal(err)
+	}
+	v, err = s.Get("test")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if v != "测试" {
+		t.Fatal("invalid test key value in store")
+	}
+	_, err = r.IsMd5Equal(s.Md5)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = r.Del("test")
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = r.IsMd5Equal(s.Md5)
+	if err == nil {
+		t.Fatal("md5 has not been renewed")
+	}
 	err = r.Close()
 	if err != nil {
 		t.Fatal(err)
@@ -40,7 +67,7 @@ func TestReg(t *testing.T) {
 }
 
 func TestPush(t *testing.T) {
-	r := NewRegedit("reilia.fumiama.top:32664", "fumiama", "--")
+	r := NewRegedit("reilia.fumiama.top:32664", "fumiama", "--", 127, 127)
 	err := r.Connect()
 	if err != nil {
 		t.Fatal(err)
