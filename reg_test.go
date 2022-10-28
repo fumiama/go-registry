@@ -5,7 +5,7 @@ import (
 )
 
 func TestReg(t *testing.T) {
-	r := NewRegedit("127.0.0.1:8888", "testpwd", "testsps", 127, 127)
+	r := NewRegedit("127.0.0.1:8888", "testpwd", "testsps")
 	err := r.Connect()
 	if err != nil {
 		t.Fatal(err)
@@ -67,7 +67,7 @@ func TestReg(t *testing.T) {
 }
 
 func TestPush(t *testing.T) {
-	r := NewRegedit("reilia.fumiama.top:32664", "fumiama", "--", 127, 127)
+	r := NewRegedit("reilia.fumiama.top:32664", "fumiama", "--")
 	err := r.Connect()
 	if err != nil {
 		t.Fatal(err)

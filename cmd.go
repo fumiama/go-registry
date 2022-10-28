@@ -2,10 +2,12 @@ package registry
 
 import (
 	"crypto/md5"
+	"encoding/binary"
 	"errors"
 	"io"
 	"unsafe"
 
+	base14 "github.com/fumiama/go-base16384"
 	tea "github.com/fumiama/gofastTEA"
 )
 
@@ -30,7 +32,7 @@ const (
 )
 
 var (
-	ErrMd5Mismatch = errors.New("cmdpacket.decrypt: md5 mismatch")
+	ErrMd5Mismatch = errors.New("cmd: md5 mismatch")
 )
 
 type CmdPacket struct {
@@ -112,6 +114,7 @@ func (c *CmdPacket) ReadFrom(f io.Reader) (n int64, err error) {
 		return int64(cnt), err
 	}
 	cnt, err = io.ReadFull(f, c.raw[:c.len])
+	cnt += 1 + 1 + 16
 	if err != nil {
 		return int64(cnt), err
 	}
@@ -133,7 +136,7 @@ func (c *CmdPacket) Write(buf []byte) (n int, err error) {
 	c.len = r.len
 	c.md5 = r.md5
 	copy(c.raw[:], r.raw[:c.len])
-	c.Data = nil
+	c.Data = c.Data[1+1+16+int(c.len):]
 	return 1 + 1 + 16 + int(c.len) - oldlen, nil
 }
 
@@ -141,9 +144,9 @@ func (c *CmdPacket) Write(buf []byte) (n int, err error) {
 func (c *CmdPacket) Encrypt(seq uint8) (raw []byte) {
 	setseq(c.t, seq)
 	c.len = uint8(c.t.EncryptLittleEndianTo(c.Data, sumtable, c.raw[:]))
-	(*slice)(unsafe.Pointer(&raw)).Data = unsafe.Pointer(&c.rawCmdPacket)
-	(*slice)(unsafe.Pointer(&raw)).Len = 1 + 1 + 16 + int(c.len)
-	(*slice)(unsafe.Pointer(&raw)).Cap = 1 + 1 + 16 + 255
+	(*slice)(unsafe.Pointer(&raw)).data = unsafe.Pointer(&c.rawCmdPacket)
+	(*slice)(unsafe.Pointer(&raw)).len = 1 + 1 + 16 + int(c.len)
+	(*slice)(unsafe.Pointer(&raw)).cap = 1 + 1 + 16 + 255
 	return
 }
 
@@ -168,6 +171,19 @@ func (c *CmdPacket) Put() {
 //go:nosplit
 func setseq(t *tea.TEA, seq uint8) {
 	*(*uint8)(unsafe.Add(unsafe.Pointer(t), 15)) = seq
+}
+
+// randuint32 returns a lock free uint32 value.
+//
+//go:linkname randuint32 runtime.fastrand
+func randuint32() uint32
+
+//go:nosplit
+func fill() []byte {
+	var b [8]byte
+	binary.LittleEndian.PutUint32(b[:4], randuint32())
+	binary.LittleEndian.PutUint32(b[4:8], randuint32())
+	return base14.Encode(b[:7])
 }
 
 // TEA encoding sumtable
