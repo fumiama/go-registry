@@ -25,6 +25,7 @@ var (
 	ErrNoSuchKey        = errors.New("reg: no such key")
 	ErrRawDataTooLong   = errors.New("reg: raw data too long")
 	ErrMd5NotEqual      = errors.New("reg: md5 not equal")
+	ErrInvalidCatData   = errors.New("reg: invalid cat data")
 )
 
 type Regedit struct {
@@ -168,6 +169,9 @@ func (r *Regedit) Cat() (*Storage, error) {
 		}
 		if err != nil {
 			return nil, err
+		}
+		if len(sp.Target) <= 1 {
+			return nil, ErrInvalidCatData
 		}
 		s.m[BytesToString(sp.Target[0])] = BytesToString(sp.Target[1])
 		i += int(sp.RealLen)
