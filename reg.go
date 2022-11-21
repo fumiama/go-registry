@@ -27,6 +27,7 @@ var (
 	ErrRawDataTooLong   = errors.New("reg: raw data too long")
 	ErrMd5NotEqual      = errors.New("reg: md5 not equal")
 	ErrInvalidCatData   = errors.New("reg: invalid cat data")
+	ErrNilStorData      = errors.New("reg: nil stor data")
 )
 
 type Regedit struct {
@@ -211,6 +212,9 @@ func (r *Regedit) Load() (*Storage, error) {
 	data, err := os.ReadFile(r.stor)
 	if err != nil {
 		return nil, err
+	}
+	if len(data) == 0 {
+		return nil, ErrNilStorData
 	}
 	s := new(Storage)
 	s.m = make(map[string]string, 256)
