@@ -6,6 +6,7 @@ import (
 	"errors"
 	"io"
 	"net"
+	"os"
 	"strconv"
 	"sync"
 	"time"
@@ -32,12 +33,13 @@ type Regedit struct {
 	mu   sync.Mutex
 	conn net.Conn
 	addr string
+	stor string
 	tp   tea.TEA
 	ts   *tea.TEA
 	seq  byte
 }
 
-func NewRegedit(addr, pwd, sps string) *Regedit {
+func NewRegedit(addr, stor, pwd, sps string) *Regedit {
 	var tp, ts [16]byte
 	if len(pwd) > 15 {
 		pwd = pwd[:15]
@@ -48,16 +50,32 @@ func NewRegedit(addr, pwd, sps string) *Regedit {
 	copy(tp[:], pwd)
 	copy(ts[:], sps)
 	s := tea.NewTeaCipherLittleEndian(ts[:])
-	return &Regedit{addr: addr, tp: tea.NewTeaCipherLittleEndian(tp[:]), ts: &s}
+	f, err := os.Open(stor)
+	if err != nil {
+		f, err = os.Create(stor)
+		if err != nil {
+			panic(err)
+		}
+	}
+	_ = f.Close()
+	return &Regedit{addr: addr, stor: stor, tp: tea.NewTeaCipherLittleEndian(tp[:]), ts: &s}
 }
 
-func NewRegReader(addr, pwd string) *Regedit {
+func NewRegReader(addr, stor, pwd string) *Regedit {
 	var tp [16]byte
 	if len(pwd) > 15 {
 		pwd = pwd[:15]
 	}
 	copy(tp[:], pwd)
-	return &Regedit{addr: addr, tp: tea.NewTeaCipherLittleEndian(tp[:])}
+	f, err := os.Open(stor)
+	if err != nil {
+		f, err = os.Create(stor)
+		if err != nil {
+			panic(err)
+		}
+	}
+	_ = f.Close()
+	return &Regedit{addr: addr, stor: stor, tp: tea.NewTeaCipherLittleEndian(tp[:])}
 }
 
 func (r *Regedit) Connect() (err error) {
@@ -176,7 +194,45 @@ func (r *Regedit) Cat() (*Storage, error) {
 		s.m[BytesToString(sp.Target[0])] = BytesToString(sp.Target[1])
 		i += int(sp.RealLen)
 	}
-	return s, nil
+	f, err := os.Create(r.stor)
+	if err != nil {
+		return s, err
+	}
+	defer f.Close()
+	_, err = f.Write(data)
+	return s, err
+}
+
+func (r *Regedit) Load() (*Storage, error) {
+	data, err := os.ReadFile(r.stor)
+	if err != nil {
+		return nil, err
+	}
+	s := new(Storage)
+	s.m = make(map[string]string, 256)
+	s.Md5 = md5.Sum(data)
+	rd := bytes.NewReader(data)
+	for i := 0; i < len(data); {
+		sp, err := spb.NewSimplePB(rd)
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return nil, err
+		}
+		if len(sp.Target) <= 1 {
+			return nil, ErrInvalidCatData
+		}
+		s.m[BytesToString(sp.Target[0])] = BytesToString(sp.Target[1])
+		i += int(sp.RealLen)
+	}
+	f, err := os.Create(r.stor)
+	if err != nil {
+		return s, err
+	}
+	defer f.Close()
+	_, err = f.Write(data)
+	return s, err
 }
 
 func (r *Regedit) IsMd5Equal(m [md5.Size]byte) (bool, error) {
