@@ -50,14 +50,16 @@ func NewRegedit(addr, stor, pwd, sps string) *Regedit {
 	copy(tp[:], pwd)
 	copy(ts[:], sps)
 	s := tea.NewTeaCipherLittleEndian(ts[:])
-	f, err := os.Open(stor)
-	if err != nil {
-		f, err = os.Create(stor)
+	if stor != "" {
+		f, err := os.Open(stor)
 		if err != nil {
-			panic(err)
+			f, err = os.Create(stor)
+			if err != nil {
+				panic(err)
+			}
 		}
+		_ = f.Close()
 	}
-	_ = f.Close()
 	return &Regedit{addr: addr, stor: stor, tp: tea.NewTeaCipherLittleEndian(tp[:]), ts: &s}
 }
 
@@ -67,14 +69,16 @@ func NewRegReader(addr, stor, pwd string) *Regedit {
 		pwd = pwd[:15]
 	}
 	copy(tp[:], pwd)
-	f, err := os.Open(stor)
-	if err != nil {
-		f, err = os.Create(stor)
+	if stor != "" {
+		f, err := os.Open(stor)
 		if err != nil {
-			panic(err)
+			f, err = os.Create(stor)
+			if err != nil {
+				panic(err)
+			}
 		}
+		_ = f.Close()
 	}
-	_ = f.Close()
 	return &Regedit{addr: addr, stor: stor, tp: tea.NewTeaCipherLittleEndian(tp[:])}
 }
 
