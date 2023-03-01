@@ -175,7 +175,7 @@ func (r *Regedit) Cat() (*Storage, error) {
 		return nil, err
 	}
 	data := make([]byte, n)
-	_, err = r.conn.Read(data)
+	_, err = io.ReadFull(r.conn, data)
 	if err != nil {
 		return nil, err
 	}
